@@ -1,18 +1,20 @@
 name: Gradle CI
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  - push
+  - pull_request
+
+env:
+  PROMPT_PR: "::warning:: Artifact upload is disabled due to the workflow is trigged by pull request."
 
 jobs:
   build:
+    name: Build CI
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-      name: Clone repository
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
     - name: Prepare Java 11
       uses: actions/setup-java@v1
@@ -28,11 +30,15 @@ jobs:
         restore-keys: ${{ runner.os }}-gradle
 
     - name: Build project
+      env:
+        IS_PR: ${{ !!github.head_ref }}
       run: |
         gradle wrapper
         bash gradlew build
-    
+        if $IS_PR ; then echo $PROMPT_PR; fi
+
     - name: Upload articact
       uses: actions/upload-artifact@v2
+      if: ${{ !github.head_ref }}
       with:
         path: build/libs
